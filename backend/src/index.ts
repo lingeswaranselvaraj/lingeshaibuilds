@@ -17,6 +17,12 @@ app.use("/api/live-tutor", liveTutorRouter);
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-app.listen(PORT, () => {
-  console.log(`LoHaa backend running on http://localhost:${PORT}`);
-});
+// Local dev
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`LoHaa backend running on http://localhost:${PORT}`);
+  });
+}
+
+// Vercel serverless export
+export default app;
