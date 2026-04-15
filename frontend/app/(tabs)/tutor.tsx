@@ -3,21 +3,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTutorStore } from "../../store/tutorStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
-import * as Speech from "expo-speech";
 import { sendTutorMessage } from "../../services/api";
+import { speakText, stopSpeech } from "../../utils/speech";
 
-// Extract Chinese character segments from a mixed Chinese/English string
 function extractCantonese(text: string): string {
   const matches = text.match(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3000-\u303f\uff00-\uffef]+/g);
   return matches ? matches.join("、") : "";
 }
 
 function speakReply(text: string) {
-  Speech.stop();
+  stopSpeech();
   const cantonese = extractCantonese(text);
-  if (cantonese) {
-    Speech.speak(cantonese, { language: "zh-HK", pitch: 1.0, rate: 0.8 });
-  }
+  if (cantonese) speakText(cantonese, { language: "zh-HK", rate: 0.8 });
 }
 
 function MessageBubble({ content, role }: { content: string; role: "user" | "assistant" }) {
@@ -28,14 +25,13 @@ function MessageBubble({ content, role }: { content: string; role: "user" | "ass
     const cantonese = extractCantonese(content);
     if (!cantonese) return;
     if (speaking) {
-      Speech.stop();
+      stopSpeech();
       setSpeaking(false);
       return;
     }
     setSpeaking(true);
-    Speech.speak(cantonese, {
+    speakText(cantonese, {
       language: "zh-HK",
-      pitch: 1.0,
       rate: 0.8,
       onDone: () => setSpeaking(false),
       onError: () => setSpeaking(false),

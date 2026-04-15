@@ -2,8 +2,8 @@ import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Platform } f
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useRef, useCallback } from "react";
-import * as Speech from "expo-speech";
 import { sendLiveTutorMessage } from "../../services/api";
+import { speakText, stopSpeech } from "../../utils/speech";
 
 interface Message { role: "user" | "assistant"; content: string; }
 
@@ -15,8 +15,8 @@ function extractCantonese(text: string): string {
 function speakCantonese(text: string, onDone?: () => void) {
   const cantonese = extractCantonese(text);
   if (!cantonese) { onDone?.(); return; }
-  Speech.stop();
-  Speech.speak(cantonese, { language: "zh-HK", pitch: 1.0, rate: 0.8, onDone, onError: onDone });
+  stopSpeech();
+  speakText(cantonese, { language: "zh-HK", rate: 0.8, onDone });
 }
 
 // Web Speech API types
@@ -163,7 +163,7 @@ export default function LiveTutorScreen() {
   };
 
   const clear = () => {
-    Speech.stop();
+    stopSpeech();
     setMessages([]);
     setSpeaking(false);
   };
