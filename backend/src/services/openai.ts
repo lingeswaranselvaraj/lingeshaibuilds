@@ -1,6 +1,18 @@
-import OpenAI from "openai";
+import { AzureOpenAI } from "openai";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _client: AzureOpenAI | null = null;
+
+function getClient(): AzureOpenAI {
+  if (!_client) {
+    _client = new AzureOpenAI({
+      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+      apiKey: process.env.AZURE_OPENAI_API_KEY,
+      apiVersion: process.env.AZURE_OPENAI_API_VERSION ?? "2024-08-01-preview",
+      deployment: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o",
+    });
+  }
+  return _client;
+}
 
 const SYSTEM_PROMPT = `You are LoHaa, a friendly and encouraging Cantonese language tutor for beginners. Your job is to help users learn to speak Cantonese.
 
@@ -16,8 +28,8 @@ Guidelines:
 export async function getCantoneseReply(
   messages: { role: string; content: string }[]
 ): Promise<string> {
-  const response = await client.chat.completions.create({
-    model: "gpt-4o",
+  const response = await getClient().chat.completions.create({
+    model: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o",
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
