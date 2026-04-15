@@ -21,6 +21,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="live"
+        options={{
+          title: "Live Tutor",
+          tabBarIcon: ({ color, size }) => <Ionicons name="mic-circle-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="tutor"
         options={{
           title: "AI Tutor",

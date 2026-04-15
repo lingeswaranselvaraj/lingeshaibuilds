@@ -3,6 +3,68 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTutorStore } from "../../store/tutorStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
+import * as Speech from "expo-speech";
+import { sendTutorMessage } from "../../services/api";
+
+// Extract Chinese character segments from a mixed Chinese/English string
+function extractCantonese(text: string): string {
+  const matches = text.match(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3000-\u303f\uff00-\uffef]+/g);
+  return matches ? matches.join("、") : "";
+}
+
+function speakReply(text: string) {
+  Speech.stop();
+  const cantonese = extractCantonese(text);
+  if (cantonese) {
+    Speech.speak(cantonese, { language: "zh-HK", pitch: 1.0, rate: 0.8 });
+  }
+}
+
+function MessageBubble({ content, role }: { content: string; role: "user" | "assistant" }) {
+  const [speaking, setSpeaking] = useState(false);
+  const isAssistant = role === "assistant";
+
+  const speak = () => {
+    const cantonese = extractCantonese(content);
+    if (!cantonese) return;
+    if (speaking) {
+      Speech.stop();
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    Speech.speak(cantonese, {
+      language: "zh-HK",
+      pitch: 1.0,
+      rate: 0.8,
+      onDone: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
+    });
+  };
+
+  const cantonese = isAssistant ? extractCantonese(content) : "";
+
+  return (
+    <View className={`mb-3 max-w-[85%] ${isAssistant ? "self-start" : "self-end"}`}>
+      <View className={`px-4 py-3 rounded-2xl ${isAssistant ? "bg-[#2d1457]" : "bg-[#4f2d8a]"}`}>
+        <Text className="text-white text-sm leading-relaxed">{content}</Text>
+      </View>
+      {isAssistant && cantonese.length > 0 && (
+        <TouchableOpacity
+          onPress={speak}
+          className="flex-row items-center mt-1.5 gap-x-1.5"
+        >
+          {speaking ? (
+            <ActivityIndicator size="small" color="#f5a623" />
+          ) : (
+            <Ionicons name="volume-high-outline" size={14} color="#f5a623" />
+          )}
+          <Text className="text-[#f5a623] text-xs">{speaking ? "Speaking…" : "Hear Cantonese"}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
 
 export default function TutorScreen() {
   const { messages, addMessage, isLoading, setLoading } = useTutorStore();
@@ -16,9 +78,10 @@ export default function TutorScreen() {
     addMessage({ role: "user", content: text });
     setLoading(true);
     try {
-      const { sendTutorMessage } = await import("../../services/api");
       const reply = await sendTutorMessage([...messages, { role: "user", content: text }]);
       addMessage({ role: "assistant", content: reply });
+      // Auto-speak Cantonese parts of the reply
+      speakReply(reply);
     } catch {
       addMessage({ role: "assistant", content: "Sorry, I couldn't connect to the tutor right now. Make sure the backend server is running." });
     } finally {
@@ -66,17 +129,7 @@ export default function TutorScreen() {
             keyExtractor={(_, i) => String(i)}
             className="flex-1 px-4 pt-4"
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            renderItem={({ item }) => (
-              <View
-                className={`mb-3 max-w-[85%] px-4 py-3 rounded-2xl ${
-                  item.role === "user"
-                    ? "self-end bg-[#4f2d8a]"
-                    : "self-start bg-[#2d1457]"
-                }`}
-              >
-                <Text className="text-white text-sm leading-relaxed">{item.content}</Text>
-              </View>
-            )}
+            renderItem={({ item }) => <MessageBubble content={item.content} role={item.role} />}
           />
         )}
 

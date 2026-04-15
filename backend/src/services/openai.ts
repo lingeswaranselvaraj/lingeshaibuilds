@@ -2,7 +2,7 @@ import { AzureOpenAI } from "openai";
 
 let _client: AzureOpenAI | null = null;
 
-function getClient(): AzureOpenAI {
+export function getClient(): AzureOpenAI {
   if (!_client) {
     _client = new AzureOpenAI({
       endpoint: process.env.AZURE_OPENAI_ENDPOINT,
